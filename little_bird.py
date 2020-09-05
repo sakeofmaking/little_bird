@@ -21,41 +21,58 @@ Last modified: Sep 2020
 import tweepy
 
 
-# Authenticate to Twitter
-with open('tokens.txt') as tokens:
-    CONSUMER_KEY = tokens.readline().strip()
-    CONSUMER_SECRET = tokens.readline().strip()
-    ACCESS_TOKEN = tokens.readline().strip()
-    ACCESS_TOKEN_SECRET = tokens.readline().strip()
-auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+def authenticate(consumer_key, consumer_secret, access_token, access_token_secret):
+    """Authenticate to Twitter"""
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_token_secret)
 
-api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+
+    if api.verify_credentials():
+        print("Authentication OK")
+        return api
+    else:
+        print("Error during authentication")
+        exit()
 
 
-# api.update_status("Test to see if notifications are working")
-# api.send_direct_message(recipient_id='sakeofmaking', text='versation')
-# https://stackoverflow.com/questions/56726863/twitter-api-tweepy-library-send-direct-message
+def send_dm(api, username, message):
+    """
+    Send direct message to specified user
+    https://stackoverflow.com/questions/56726863/twitter-api-tweepy-library-send-direct-message
+    """
+    user = api.get_user(screen_name=username)
 
-user = api.get_user(screen_name='sakeofmaking')
-
-event = {
-  "event": {
-    "type": "message_create",
-    "message_create": {
-      "target": {
-        "recipient_id": user.id
-      },
-      "message_data": {
-        "text": "This is a Twitter notification"
+    event = {
+      "event": {
+        "type": "message_create",
+        "message_create": {
+          "target": {
+            "recipient_id": user.id
+          },
+          "message_data": {
+            "text": message
+          }
+        }
       }
     }
-  }
-}
 
-# Send direct message
-api.send_direct_message_new(event)
+    # Send direct message
+    api.send_direct_message_new(event)
 
-# if __name__ == '__main__':
-#     print('Test')
 
+if __name__ == '__main__':
+    # Pull tokens from file tokens.txt
+    with open('tokens.txt') as tokens:
+        CONSUMER_KEY = tokens.readline().strip()
+        CONSUMER_SECRET = tokens.readline().strip()
+        ACCESS_TOKEN = tokens.readline().strip()
+        ACCESS_TOKEN_SECRET = tokens.readline().strip()
+
+    # Authenticate to Twitter
+    api_obj = authenticate(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+
+    # Send Direct Message
+    username = 'sakeofmaking'
+    message = "Mauris tincidunt arcu odio, dignissim volutpat nibh rutrum non."
+    send_dm(api_obj, username, message)
