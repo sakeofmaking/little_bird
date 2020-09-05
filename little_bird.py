@@ -19,6 +19,13 @@ Last modified: Sep 2020
 """
 
 import tweepy
+import logging
+import threading
+import time
+
+
+# Configure logging
+logging.basicConfig(format="%(asctime)s: %(message)s", level=logging.INFO, datefmt="%H:%M:%S")
 
 
 def authenticate(consumer_key, consumer_secret, access_token, access_token_secret):
@@ -61,6 +68,20 @@ def send_dm(api, username, message):
     api.send_direct_message_new(event)
 
 
+def news_thread(delay):
+    """Monitor Twitter news for keywords"""
+    logging.info("News Thread: starting")
+    time.sleep(delay)
+    logging.info("News Thread: finishing")
+
+
+def weather_thread(delay):
+    """Monitor the weather for alerts"""
+    logging.info("Weather Thread: starting")
+    time.sleep(delay)
+    logging.info("Weather Thread: finishing")
+
+
 if __name__ == '__main__':
     # Pull tokens from file tokens.txt
     with open('tokens.txt') as tokens:
@@ -72,7 +93,24 @@ if __name__ == '__main__':
     # Authenticate to Twitter
     api_obj = authenticate(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 
-    # Send Direct Message
-    username = 'sakeofmaking'
-    message = "Mauris tincidunt arcu odio, dignissim volutpat nibh rutrum non."
-    send_dm(api_obj, username, message)
+    # # Send Direct Message
+    # username = 'sakeofmaking'
+    # message = "Mauris tincidunt arcu odio, dignissim volutpat nibh rutrum non."
+    # send_dm(api_obj, username, message)
+
+    # Thread Loop
+    MINUTE = 60
+    HOUR = 3600
+    x = threading.Thread(target=news_thread, args=(HOUR,))
+    y = threading.Thread(target=weather_thread, args=(MINUTE*30,))
+    while True:
+        if not x.is_alive():
+            x = threading.Thread(target=news_thread, args=(HOUR,))
+            x.start()
+
+        if not y.is_alive():
+            y = threading.Thread(target=weather_thread, args=(MINUTE*30,))
+            y.start()
+
+        time.sleep(MINUTE)
+        logging.info("Main    : all done")
