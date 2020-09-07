@@ -22,6 +22,7 @@ import tweepy
 import logging
 import threading
 import time
+import re
 
 
 # Configure logging
@@ -68,14 +69,41 @@ def send_dm(api, username, message):
     api.send_direct_message_new(event)
 
 
-def news_thread(delay):
+def news_thread(delay, api):
     """Monitor Twitter news for keywords"""
     logging.info("News Thread: starting")
+
+    # Poll @BBCBreaking for latest tweet
+    timeline = api.user_timeline(id='BBCBreaking')
+    tweets = []
+    pattern = r'^(.*)(https.*)'
+    for tweet in timeline:
+        result = re.search(pattern, f"{tweet.user.name}: {tweet.text}")
+        if result:
+            tweets.append(result[1].strip())
+
+    # Compare tweets with past tweets
+    past_tweets = []
+    with open('tweet_log.txt') as tweet_log:
+        for line in tweet_log:
+            past_tweets.append(line.strip())
+    try:
+        if tweets[0] != past_tweets[0]:
+            send_dm(api, 'sakeofmaking', tweets[0])
+            logging.info('News direct message sent')
+    except IndexError:
+        logging.info("No past tweets logged")
+
+    # Update tweet log
+    with open('tweet_log.txt', 'w') as tweet_log:
+        tweet_log.writelines(tweet + '\n' for tweet in tweets)
+
     time.sleep(delay)
+
     logging.info("News Thread: finishing")
 
 
-def weather_thread(delay):
+def weather_thread(delay, api):
     """Monitor the weather for alerts"""
     logging.info("Weather Thread: starting")
     time.sleep(delay)
@@ -93,23 +121,18 @@ if __name__ == '__main__':
     # Authenticate to Twitter
     api_obj = authenticate(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 
-    # # Send Direct Message
-    # username = 'sakeofmaking'
-    # message = "Mauris tincidunt arcu odio, dignissim volutpat nibh rutrum non."
-    # send_dm(api_obj, username, message)
-
     # Thread Loop
     MINUTE = 60
     HOUR = 3600
-    x = threading.Thread(target=news_thread, args=(HOUR,))
-    y = threading.Thread(target=weather_thread, args=(MINUTE*30,))
+    x = threading.Thread(target=news_thread, args=(HOUR, api_obj))
+    y = threading.Thread(target=weather_thread, args=(MINUTE*30, api_obj))
     while True:
         if not x.is_alive():
-            x = threading.Thread(target=news_thread, args=(HOUR,))
+            x = threading.Thread(target=news_thread, args=(HOUR, api_obj))
             x.start()
 
         if not y.is_alive():
-            y = threading.Thread(target=weather_thread, args=(MINUTE*30,))
+            y = threading.Thread(target=weather_thread, args=(MINUTE*30, api_obj))
             y.start()
 
         time.sleep(MINUTE)
