@@ -23,6 +23,7 @@ import logging
 import threading
 import time
 import re
+import subprocess
 
 
 # Configure logging
@@ -74,9 +75,9 @@ def news_thread(delay, api):
     logging.info("News Thread: starting")
 
     # Poll @BBCBreaking for latest tweet
-    timeline = api.user_timeline(id='BBCBreaking')
+    timeline = api.user_timeline(id="BBCBreaking")
     tweets = []
-    pattern = r'^(.*)(https.*)'
+    pattern = r"^(.*)(https.*)"
     for tweet in timeline:
         result = re.search(pattern, f"{tweet.user.name}: {tweet.text}")
         if result:
@@ -84,19 +85,19 @@ def news_thread(delay, api):
 
     # Compare tweets with past tweets
     past_tweets = []
-    with open('tweet_log.txt') as tweet_log:
-        for line in tweet_log:
+    with open("news_log.txt") as news_log:
+        for line in news_log:
             past_tweets.append(line.strip())
     try:
         if tweets[0] != past_tweets[0]:
-            send_dm(api, 'sakeofmaking', tweets[0])
-            logging.info('News direct message sent')
+            send_dm(api, "sakeofmaking", tweets[0])
+            logging.info("News direct message sent")
     except IndexError:
         logging.info("No past tweets logged")
 
-    # Update tweet log
-    with open('tweet_log.txt', 'w') as tweet_log:
-        tweet_log.writelines(tweet + '\n' for tweet in tweets)
+    # Update news log
+    with open("news_log.txt", "w") as news_log:
+        news_log.writelines(tweet + "\n" for tweet in tweets)
 
     time.sleep(delay)
 
@@ -106,6 +107,25 @@ def news_thread(delay, api):
 def weather_thread(delay, api):
     """Monitor the weather for alerts"""
     logging.info("Weather Thread: starting")
+
+    # Use curl wttr.in to poll weather for precipitation
+    pattern = r"^(.*),.*: (.*)"
+    precipitation = subprocess.check_output(r'curl wttr.in?format="%l:+%p\n"', shell=True).decode("utf-8")
+    result = re.search(pattern, precipitation)
+    if result:
+        precipitation = f"{result[2]} of rain in {result[1]}"
+
+    # Compare current precipitation with past precipitation
+    with open("weather_log.txt") as weather_log:
+        past_precipitation = weather_log.readline()
+    if precipitation != past_precipitation:
+        send_dm(api, "sakeofmaking", precipitation)
+        logging.info("Weather direct message sent")
+
+    # Update weather log
+    with open("weather_log.txt", "w") as weather_log:
+        weather_log.write(precipitation)
+
     time.sleep(delay)
     logging.info("Weather Thread: finishing")
 
