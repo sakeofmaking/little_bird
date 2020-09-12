@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Little Bird
 
@@ -24,6 +26,8 @@ import threading
 import time
 import re
 import subprocess
+import os
+import sys
 
 
 # Configure logging
@@ -130,6 +134,22 @@ def weather_thread(delay, api):
     logging.info("Weather Thread: finishing")
 
 
+def clear_thread(delay):
+    """Clears terminal of text"""
+    logging.info("Clear Thread: starting")
+
+    # Check platform
+    if sys.platform == 'win32':
+        # Windows command clear
+        os.system('cls')
+    else:
+        # Linux shell clear
+        os.system('clear')
+
+    time.sleep(delay)
+    logging.info("Clear Thread: finishing")
+
+
 if __name__ == '__main__':
     # Pull tokens from file tokens.txt
     with open('tokens.txt') as tokens:
@@ -146,6 +166,7 @@ if __name__ == '__main__':
     HOUR = 3600
     x = threading.Thread(target=news_thread, args=(HOUR, api_obj))
     y = threading.Thread(target=weather_thread, args=(MINUTE*30, api_obj))
+    z = threading.Thread(target=clear_thread, args=(HOUR * 24))
     while True:
         if not x.is_alive():
             x = threading.Thread(target=news_thread, args=(HOUR, api_obj))
@@ -154,6 +175,10 @@ if __name__ == '__main__':
         if not y.is_alive():
             y = threading.Thread(target=weather_thread, args=(MINUTE*30, api_obj))
             y.start()
+
+        if not z.is_alive():
+            z = threading.Thread(target=clear_thread, args=(HOUR * 24))
+            z.start()
 
         time.sleep(MINUTE)
         logging.info("Main    : all done")
