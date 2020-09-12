@@ -134,7 +134,7 @@ def weather_thread(delay, api):
     logging.info("Weather Thread: finishing")
 
 
-def clear_thread(delay):
+def clear_thread(delay, api):
     """Clears terminal of text"""
     logging.info("Clear Thread: starting")
 
@@ -164,20 +164,20 @@ if __name__ == '__main__':
     # Thread Loop
     MINUTE = 60
     HOUR = 3600
-    x = threading.Thread(target=news_thread, args=(HOUR, api_obj))
-    y = threading.Thread(target=weather_thread, args=(MINUTE*30, api_obj))
-    z = threading.Thread(target=clear_thread, args=(HOUR * 24))
+    x = threading.Thread(target=clear_thread, args=(HOUR*24, api_obj))
+    y = threading.Thread(target=news_thread, args=(HOUR, api_obj))
+    z = threading.Thread(target=weather_thread, args=(MINUTE*30, api_obj))
     while True:
         if not x.is_alive():
-            x = threading.Thread(target=news_thread, args=(HOUR, api_obj))
+            x = threading.Thread(target=clear_thread, args=(HOUR*24, api_obj))
             x.start()
 
         if not y.is_alive():
-            y = threading.Thread(target=weather_thread, args=(MINUTE*30, api_obj))
+            y = threading.Thread(target=news_thread, args=(HOUR, api_obj))
             y.start()
 
         if not z.is_alive():
-            z = threading.Thread(target=clear_thread, args=(HOUR * 24))
+            z = threading.Thread(target=weather_thread, args=(MINUTE*30, api_obj))
             z.start()
 
         time.sleep(MINUTE)
