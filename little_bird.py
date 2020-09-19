@@ -15,6 +15,7 @@ Applications:
 
 @source: https://realpython.com/twitter-bot-python-tweepy/
 @source: https://www.geeksforgeeks.org/tweet-using-python/
+@source: https://github.com/chubin/wttr.in
 
 Author: Nic La
 Last modified: Sep 2020
@@ -122,7 +123,7 @@ def weather_thread(delay, api):
     # Compare current precipitation with past precipitation
     with open("weather_log.txt") as weather_log:
         past_precipitation = weather_log.readline()
-    if precipitation != past_precipitation:
+    if precipitation > past_precipitation:
         send_dm(api, "sakeofmaking", precipitation)
         logging.info("Weather direct message sent")
 
